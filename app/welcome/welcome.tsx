@@ -1,89 +1,244 @@
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
+import { useEffect, useState } from "react";
+import { useAccount, useBalance } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import MyConnectButton from "../components/rainbow/MyConnectButton";
+import { shortAddress } from "../components/utils/shortAddress";
+import {useSendTransaction} from "wagmi"
+import { parseEther, formatEther } from "viem";
+import type { SendTransactionResult } from "wagmi/actions"
+
+import { sendEthSchema } from "../.schema";
+import { form } from "viem/chains";
+import { useWaitForTransactionReceipt } from "wagmi";
+
 
 export function Welcome() {
+  const [mounted, setMounted] = useState(false);
+  const [ethAmount, setEthAmount] = useState(parseEther(".001"));
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
+  const [formErrors, setFormErrors] = useState<string | null>(null);
+
+/*   const {
+    sendTransaction,
+    isLoading: txIsLoading,
+    isSuccess: txIsSuccess,
+    error: txError,
+    data: txData,
+  } = useSendTransaction(); */
+
+  const {
+    sendTransaction,
+    data: hash, // This is the transaction hash
+    isPending: txIsLoading, // 'isLoading' is usually 'isPending' in newer wagmi versions
+    isSuccess: txIsSent,
+    error: txError,
+  } = useSendTransaction();
+  // 2. Receipt Hook (MUST be at top level)
+  const { data: receipt, isLoading: isWaitingForReceipt } = useWaitForTransactionReceipt({
+    hash, // Pass the hash from useSendTransaction
+    confirmations: 1, // 1 block confirm
+  });
+
+  const gasFee =
+  receipt
+    ? formatEther(receipt.gasUsed * receipt.effectiveGasPrice)
+    : null;
+
+ 
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+
+  const formData = new FormData(e.target as HTMLFormElement);
+  const values = {
+    to: formData.get("toAddress") as string, 
+  };
+ 
+  const result = sendEthSchema.safeParse(values);
+  if (!result.success) {
+   // console.log(result.error.issues[0].message);
+    setFormErrors(result.error.issues[0].message);
+    return;
+  }
+  
+
+  sendTransaction({
+      to: result.data.to,
+      value: ethAmount,
+    });
+
+  
+  //console.log( parseEther(amount.toString()), "popopopop");
+/*   sendTransaction({
+    to,
+    value: parseEther(amount.toString()),
+  });
+  if (!sendTransaction.isSuccess) {
+    console.log(sendTransaction.error);
+    return;
+  }
+  console.log(sendTransaction.data, "sendTransaction.data"); */
+ 
+
+}
+   
+ 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+
+useEffect(() => {
+   if(!formErrors) return;
+
+     setTimeout(() => {
+      setFormErrors(null);
+     }, 3000);
+}, [formErrors]);
+
+
+  //if (!mounted) return null;
+  const { address, isConnected } = useAccount();
+ 
+    const {data, isLoading} = useBalance({
+    address:   isConnected ? address : undefined
+  });
+ 
+
+
+
+
+
   return (
-    <main className="flex items-center justify-center pt-16 pb-4">
-      <div className="flex-1 flex flex-col items-center gap-16 min-h-0">
-        <header className="flex flex-col items-center gap-9">
-          <div className="w-[500px] max-w-[100vw] p-4">
-            <img
-              src={logoLight}
-              alt="React Router"
-              className="block w-full dark:hidden"
-            />
-            <img
-              src={logoDark}
-              alt="React Router"
-              className="hidden w-full dark:block"
-            />
+         
+       <div className="min-h-screen mx-auto grid grid-rows-[auto_1fr_auto] ">      
+         
+          <header className="bg-gradient-to-r from-[#a80885] to-[#1b0eaa]">
+          <div className="container mx-auto flex justify-between items-center p-4">
+            <div className="flex text-2xl font-bold text-white justify-center items-center">
+              <img src="images/logo.png" alt="" width={40}/>
+               <div className="font-bruno text-2xl text-white"> SR TOKEN </div>
+              </div>
+
+            <nav className="flex gap-4">
+              <a href="#" className="text-white hover:text-gray-300 font-jura text-2xl">Decentralized Business</a>
+               
+            </nav>
           </div>
-        </header>
-        <div className="max-w-[300px] w-full space-y-6 px-4">
-          <nav className="rounded-3xl border border-gray-200 p-6 dark:border-gray-700 space-y-4">
-            <p className="leading-6 text-gray-700 dark:text-gray-200 text-center">
-              What&apos;s next?
-            </p>
-            <ul>
-              {resources.map(({ href, text, icon }) => (
-                <li key={href}>
-                  <a
-                    className="group flex items-center gap-3 self-stretch p-3 leading-normal text-blue-700 hover:underline dark:text-blue-500"
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {icon}
-                    {text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          </header>
+
+          <div className="bg-gradient-to-br from-[#0d1451] via-[#670452] to-[#065f74]">
+              <main>
+          
+                <div className="flex container">
+                <div className=" p-4 flex flex-col   ">
+                    <h1 className="text-4xl font-bold   text-white font-jura">Welcome to SR TOKEN</h1>
+                    <h1 className="text-6xl font-bold   text-gray-400 font-jura"> SR TOKEN - Ico Landing for a cryptocurrency business</h1>
+                    <p className="text-white   font-jura text-xl mt-4">
+                        SR TOKEN is a decentralized token that allows users to transfer and store value on the Ethereum blockchain.
+                    </p>
+                    <div>
+                    <div>
+  {/* If we have a hash but no receipt yet, it's pending */}
+
+{/*   {hash && !receipt && <p className="text-yellow-500">Transaction Pending...</p>}
+  {receipt?.transactionHash && (
+    <div className="mt-2">
+      <p className="text-green-500">Success!</p>
+      <a
+        href={`https://sepolia.etherscan.io/tx/${receipt.transactionHash}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 underline font-bold"
+      >
+        View on Etherscan
+      </a>
+    </div>
+  )} */}
+
+
+{hash && !receipt && <p className="text-yellow-500">Transaction Pending...</p>}
+  {receipt?.transactionHash && (
+    <div className="mt-2">
+      <p className="text-green-500">Success!</p>
+      <a
+        href={`https://sepolia.explorer.zksync.io/tx/${receipt.transactionHash}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 underline font-bold"
+      >
+        View on zkSync Explorer -- Used GAS {gasFee}
+      </a>
+    </div>
+  )}
+ 
+
+
+</div>
+
+                    
+                    </div>
+                </div>
+                <div>
+                  <div className="flex justify-center items-center">
+                 {/*  {isConnected ? (
+        <p>
+          👤 Connected Wallet:
+          <br />
+          <b>{address}</b>
+        </p>
+      ) : (
+        <button className="bg-gradient-to-t from-[#d08700] to-[#fdca10] p-2   rounded-xl mt-4 w-[400px]">Connect Wallet</button>
+      )} */}  {mounted && <MyConnectButton />}
+                    
+                    </div>
+                <div className="shadow-xl rounded-2xl w-[400px] h-[230px] p-4 mt-4 bg-gradient-to-br from-[#000000] via-[#31323a] to-[#000000]">
+                  <div className="flex justify-between items-center  ">
+                    <div className=" text-2xl font-bold font-bruno font-bold  bg-gradient-to-t from-[#d08700] to-[#fdca10] p-2   bg-clip-text text-transparent text- rounded-md  [text-shadow:0_2px_2px_rgba(0,0,0,0.3)]"  >SR TOKEN</div>
+                    <img src="images/logo.png" alt="" width={50}/>
+                  </div>
+                  <div className="text-xl text-white font-bruno p-2  bg-gradient-to-t from-[#3b3a37] to-[#aaaaaa] p-2   bg-clip-text text-transparent text- rounded-md  [text-shadow:0_2px_2px_rgba(0,0,0,0.3)]">
+                     WALLET BALANCE {isConnected? (isLoading ? "Loading..." : data.formatted):0} ETH
+                  </div>
+                  <div className="text-xl text-white font-bruno p-2  bg-gradient-to-t from-[#d08700] to-[#fdca10] p-2   bg-clip-text text-transparent text- rounded-md  [text-shadow:0_2px_2px_rgba(0,0,0,0.3)]">
+                    {isConnected ? shortAddress(address) : "Please connect wallet"}
+                     {/* 1478-1589-3587-2587 */}
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-4 w-[400px]">
+                  <div className="flex">
+                       <input type="text" name="toAddress" placeholder="Plz. enter your address" className=" w-[3/4] pl-2 rounded-md border  bg-[#aaaaaa] mr-2" />
+                       <button className="bg-gradient-to-t from-[#d08700] to-[#fdca10] p-2   rounded-md"
+                       disabled={txIsSent}
+                       >
+                         
+                          {txIsLoading && "Waiting "} 
+                          {!txIsLoading && !txIsSent &&   "Transfer"}
+                          {txIsSent && "Sent ✅"}
+                        </button>
+                      {/*  {isLoading ? "Sending..." : "Send 0.001 ETH"} */}
+                       
+                  </div>
+                  </form>
+                  <div className="text-white">
+                  <span className="text-red-500">{ formErrors}</span>
+                   {/*  {txIsLoading && "Sending..."}
+                    {txIsSuccess && `Send ${ formatEther(ethAmount)} ETH`} */}
+                      
+                  </div>
+                  </div> 
+                </div>
+                </div>
+              </main>
+          </div>
+          <footer className=" p-4 items-center bg-gradient-to-r from-[#1b0eaa] to-[#a80885]">
+              <div className="text-white text-center">
+                &copy; 2023 SR TOKEN. All rights reserved.
+              </div>
+          </footer>
+
         </div>
-      </div>
-    </main>
+       
   );
 }
 
-const resources = [
-  {
-    href: "https://reactrouter.com/docs",
-    text: "React Router Docs",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
-      >
-        <path
-          d="M9.99981 10.0751V9.99992M17.4688 17.4688C15.889 19.0485 11.2645 16.9853 7.13958 12.8604C3.01467 8.73546 0.951405 4.11091 2.53116 2.53116C4.11091 0.951405 8.73546 3.01467 12.8604 7.13958C16.9853 11.2645 19.0485 15.889 17.4688 17.4688ZM2.53132 17.4688C0.951566 15.8891 3.01483 11.2645 7.13974 7.13963C11.2647 3.01471 15.8892 0.951453 17.469 2.53121C19.0487 4.11096 16.9854 8.73551 12.8605 12.8604C8.73562 16.9853 4.11107 19.0486 2.53132 17.4688Z"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: "https://rmx.as/discord",
-    text: "Join Discord",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="20"
-        viewBox="0 0 24 20"
-        fill="none"
-        className="stroke-gray-600 group-hover:stroke-current dark:stroke-gray-300"
-      >
-        <path
-          d="M15.0686 1.25995L14.5477 1.17423L14.2913 1.63578C14.1754 1.84439 14.0545 2.08275 13.9422 2.31963C12.6461 2.16488 11.3406 2.16505 10.0445 2.32014C9.92822 2.08178 9.80478 1.84975 9.67412 1.62413L9.41449 1.17584L8.90333 1.25995C7.33547 1.51794 5.80717 1.99419 4.37748 2.66939L4.19 2.75793L4.07461 2.93019C1.23864 7.16437 0.46302 11.3053 0.838165 15.3924L0.868838 15.7266L1.13844 15.9264C2.81818 17.1714 4.68053 18.1233 6.68582 18.719L7.18892 18.8684L7.50166 18.4469C7.96179 17.8268 8.36504 17.1824 8.709 16.4944L8.71099 16.4904C10.8645 17.0471 13.128 17.0485 15.2821 16.4947C15.6261 17.1826 16.0293 17.8269 16.4892 18.4469L16.805 18.8725L17.3116 18.717C19.3056 18.105 21.1876 17.1751 22.8559 15.9238L23.1224 15.724L23.1528 15.3923C23.5873 10.6524 22.3579 6.53306 19.8947 2.90714L19.7759 2.73227L19.5833 2.64518C18.1437 1.99439 16.6386 1.51826 15.0686 1.25995ZM16.6074 10.7755L16.6074 10.7756C16.5934 11.6409 16.0212 12.1444 15.4783 12.1444C14.9297 12.1444 14.3493 11.6173 14.3493 10.7877C14.3493 9.94885 14.9378 9.41192 15.4783 9.41192C16.0471 9.41192 16.6209 9.93851 16.6074 10.7755ZM8.49373 12.1444C7.94513 12.1444 7.36471 11.6173 7.36471 10.7877C7.36471 9.94885 7.95323 9.41192 8.49373 9.41192C9.06038 9.41192 9.63892 9.93712 9.6417 10.7815C9.62517 11.6239 9.05462 12.1444 8.49373 12.1444Z"
-          strokeWidth="1.5"
-        />
-      </svg>
-    ),
-  },
-];

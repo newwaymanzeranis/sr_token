@@ -5,10 +5,14 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-} from "react-router";
+} from "react-router"; 
 
 import type { Route } from "./+types/root";
 import "./app.css";
+
+import Providers from "./providers";
+import { useEffect, useState } from "react";
+
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -24,17 +28,34 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&family=Jura:wght@300;400;500;600;700&display=swap"
+  rel="stylesheet"
+/>
         <Links />
+       
       </head>
       <body>
-        {children}
-        <ScrollRestoration />
+      {mounted ? (
+          <Providers> 
+            {children}
+          </Providers>
+        ) : null}
         <Scripts />
       </body>
     </html>
